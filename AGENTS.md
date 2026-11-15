@@ -7,8 +7,21 @@ the envelope's `RULES.md` and must never be copied here.
 
 ## State
 
-Not started. Planned for phases P2 to P4 of `.ai/plans/agent-chat-framework.md`.
-There is no `composer.json` yet, so there is nothing to test or publish.
+The Harness adapter exists: `src/HarnessBackend.php`, an `AgentBackend` for
+`fancy-chat-php` over `Session::streamSteps()` / `streamDecision()` (RunStep
+contract `g282.1`). Not published. The ACP, bare `asStream()`, graph and memory
+adapters of `.ai/plans/agent-chat-framework.md` section 6 are not built.
+
+- `vendor/bin/pest` runs the suite; `php tests/sabotage.php` mutates each
+  mapping clause and must report every one caught. A new clause gets a
+  mutation in the same change.
+- Tests use `tests/Support/FakeSession` (extends the real Harness `Session`,
+  yields real `RunStep`s, dispatches real run events) for the mapping, and
+  `tests/Integration/RealHarnessTest.php` for the real Harness with Prism's
+  fake model.
+- Harness run events are Laravel events dispatched mid-stream; the backend
+  collects them per session key and yields them in place. They are not in the
+  step stream.
 
 ## Invariants once code lands
 
