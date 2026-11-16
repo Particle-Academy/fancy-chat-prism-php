@@ -17,6 +17,21 @@ $file = 'src/HarnessBackend.php';
 
 /** @var list<array{0: string, 1: string, 2: string, 3: string}> [name, file, search, replace] */
 $mutations = [
+    // The knowledge bridge.
+    ['kb: no scope still served', 'src/KnowledgeBridge.php', "        if (! \$graph instanceof ScopedGraph) {\n            return new JsonResponse(['error' => 'knowledge.scope'], 403);\n        }\n        try {\n            return new JsonResponse(\$read(\$graph));", "        try {\n            return new JsonResponse(\$read(\$graph));"],
+    ['kb: search not hydrated', 'src/KnowledgeBridge.php', "        return array_map(fn (Chunk \$c): array => \$found[\$c->id] ?? [", "        return array_map(fn (Chunk \$c): array => ["],
+    ['kb: hydrate stops at the first page', 'src/KnowledgeBridge.php', "                \$cursor = \$listing['nextCursor'];\n                if (\$cursor === null) {\n                    break;\n                }", '                break;'],
+    ['kb: listing unstamped', 'src/KnowledgeBridge.php', "        return ['contractVersion' => self::CONTRACT_VERSION, 'items' => array_values(\$items), 'nextCursor' => null];", "        return ['items' => array_values(\$items), 'nextCursor' => null];"],
+    // Not listed, as provably equivalent: 'status' => $f->status (the enum object).
+    // json_encode writes a backed enum as its value, so the wire is identical.
+    ['kb: unaccepted ignored', 'src/KnowledgeBridge.php', "\$graph->facts(\$subject, unaccepted: \$unaccepted)", "\$graph->facts(\$subject, unaccepted: true)"],
+    ['kb: agents decide', 'src/KnowledgeBridge.php', "if (! is_array(\$actor) || (\$actor['kind'] ?? null) !== 'human' ||", 'if (! is_array($actor) ||'],
+    ['kb: decisions on by default', 'src/KnowledgeBridge.php', "            if (\$bridge->decider !== null) {", '            if (true) {'],
+    ['kb: reject accepts', 'src/KnowledgeBridge.php', "\$decision === 'accept' ? \$graph->accept(\$factId) : \$graph->retract(\$factId);", '$graph->accept($factId);'],
+    ['kb: decision not audited', 'src/KnowledgeBridge.php', "            (\$this->onDecision)(\$factId, \$decision, \$actor);\n", ''],
+    ['kb: id cap ignored', 'src/KnowledgeBridge.php', "        if (count(\$ids) > min(\$max, ScopedGraph::MAX_GET_IDS)) {", '        if (false) {'],
+    ['kb: missing subject accepted', 'src/KnowledgeBridge.php', "        if (! is_string(\$s) || trim(\$s) === '') {\n            throw new InvalidArgumentException('subject');", "        if (! is_string(\$s)) {\n            throw new InvalidArgumentException('subject');"],
+    ['kb: unshipped call guessed', 'src/KnowledgeBridge.php', "        if (! method_exists(\$graph, \$method)) {\n            throw new UnsupportedKnowledgeCall;\n        }", "        if (! method_exists(\$graph, \$method)) {\n            return ['contractVersion' => self::CONTRACT_VERSION, 'items' => [], 'nextCursor' => null];\n        }"],
     // A root run that ends badly fails the turn.
     ['length reads as success', $file, "        'length' => ['action' => 'fail', 'reason' => 'output_limit'],\n", ''],
     ['content filter reads as success', $file, "        'content-filter' => ['action' => 'fail', 'reason' => 'content_filter'],\n", ''],

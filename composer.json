@@ -39,7 +39,11 @@
     },
     "require-dev": {
         "laravel/framework": "^13.30",
+        "particle-academy/prism-graph": "^0.3",
         "pestphp/pest": "^5.0"
+    },
+    "suggest": {
+        "particle-academy/prism-graph": "^0.3, for the optional KnowledgeBridge (the knowledge explorer's routes)"
     },
     "autoload": {
         "psr-4": {

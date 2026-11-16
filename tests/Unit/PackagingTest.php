@@ -15,7 +15,10 @@ it('depends on the chat core and Prism Harness, and on no other third-party pack
         ->and($manifest['require']['php'])->toBe('^8.4')
         ->and($manifest['require']['illuminate/support'])->toBe('^13.0')
         ->and($manifest['require']['particle-academy/prism-harness'])->toBe('^0.26')
-        ->and(array_keys($manifest['require-dev']))->toBe(['laravel/framework', 'pestphp/pest'])
+        // prism-graph is OPTIONAL (the KnowledgeBridge): suggested, and installed only to test the bridge.
+        ->and(array_keys($manifest['require-dev']))->toBe(['laravel/framework', 'particle-academy/prism-graph', 'pestphp/pest'])
+        ->and($manifest['suggest'])->toHaveKey('particle-academy/prism-graph')
+        ->and($manifest['require'])->not->toHaveKey('particle-academy/prism-graph')
         ->and($manifest['require-dev']['pestphp/pest'])->toBe('^5.0');
 });
 

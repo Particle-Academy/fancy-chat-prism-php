@@ -8,6 +8,18 @@ version number is not a stability promise until 1.0; read the entry.
 
 ## [Unreleased]
 
+### Added
+
+- **`KnowledgeBridge`, optional:** routes serving fancy-chat-ui's knowledge explorer
+  from prism-graph 0.3 (`search`, `listSources`, `listChunks`, `getChunks`, `facts`,
+  `factTimeline`; `listFacts`, ingest jobs and worker status pass through once
+  prism-graph ships them, 501 until then). The scope comes from a host resolver,
+  never the client. Search hits and chunks by id are hydrated into full chunk items
+  through `ScopedGraph::listChunks`. Listings prism-graph does not stamp are stamped
+  `g282.1`. Accept and reject exist only with a host `decider` and take a human actor
+  only. prism-graph is suggested, not required. Nothing to do unless you want it.
+- README: how a run's end settles the turn.
+
 ### Fixed
 
 - **A run that ended badly settled the turn as completed.** Harness fires

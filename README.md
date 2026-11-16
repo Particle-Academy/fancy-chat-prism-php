@@ -29,12 +29,33 @@ It reads Harness's tagged step stream, `Session::streamSteps()` (and
 | `decision_recorded` | `x-fancy-chat-prism.decision-recorded` `{approvalId, verdict, reason, actor}` |
 | `error` | the turn fails, reason `harness.error: <code>` (the code only; Harness never forwards the provider's message) |
 | `step_start`, `step_finish` | boundaries: they close any open thinking or text block |
-| `RunStarted` / `RunFinished` / `RunFailed` | `run.started` / `run.finished` / `run.failed`, with `runId`, `parentRunId` and `rootRunId` |
+| `RunStarted` / `RunFinished` / `RunFailed` | `run.started` / `run.finished` / `run.failed`, with `runId`, `parentRunId` and `rootRunId`. The ROOT run's end also settles the turn (below). |
 | `RunResumed` | `x-fancy-chat-prism.run-resumed` (a resumed run is not a second start) |
 
 Every mapped event carries the run lineage on the envelope and the step's own
 `{runId, turnId, seq, at}` in `data.harness`, so Harness's ordering survives into
 the chat log.
+
+## How a run's end settles the turn
+
+The root run's finish reason (Prism `FinishReason`, carried by Harness's `RunFinished`)
+decides the turn. A sub-run's end never does.
+
+| Finish | Turn |
+|---|---|
+| `stop` | completed |
+| `length` | failed, `output_limit` (the partial text stays) |
+| `content-filter` | failed, `content_filter` |
+| `refusal` | refused, `refusal` |
+| `error` | failed, `model_error` |
+| `unknown` / `other` / anything not listed | failed, `finish_unknown` / `finish_other` / `finish_unknown` |
+| `tool-calls`, `pause` | parks when the run raised approvals; otherwise failed, `step_limit` / `finish_pause` |
+| `RunFailed` | failed, `model_error` (error), `finish_unknown` (unknown), `budget`, or `run_failed` |
+
+Approvals are published when the turn parks, after the stream is exhausted, so
+Harness and the host's recorders (prism-graph's `TurnRecorder` included) have
+persisted the run before any human can act. A decision that still lands before the
+park resumes the turn once it parks (fancy-chat-php's queue-and-resume).
 
 ## The version gate
 
@@ -117,6 +138,47 @@ the adapter cancels the session's current run and passes Harness's outcome
 through (`ok`, `not-running`, `no-turn`, `unsupported`, `refused`); anything
 else, or an exception, is `uncertain`. Both `stop` and `interrupt` map to the
 same Harness cancel.
+
+## Knowledge (optional)
+
+`FancyChat\Prism\KnowledgeBridge` serves fancy-chat-ui's `./knowledge` explorer from
+prism-graph (`composer require particle-academy/prism-graph:^0.3`; it is only
+suggested here). The host binds the scope from its own authentication; the client
+never sends one.
+
+```php
+use FancyChat\Prism\KnowledgeBridge;
+use Prism\Graph\Graph;
+use Prism\Graph\Scope;
+
+KnowledgeBridge::routes(new KnowledgeBridge(
+    scope: fn (Request $r) => $r->user() ? app(Graph::class)->scope(new Scope('acme', (string) $r->user()->getKey())) : null,
+    // Optional. Without it there are no accept/reject routes (a read-only explorer).
+    decider: fn (Request $r) => $r->user() ? ['kind' => 'human', 'id' => (string) $r->user()->getKey()] : null,
+    onDecision: fn (string $factId, string $decision, array $actor) => audit($factId, $decision, $actor),
+), 'fancy-chat/knowledge', ['web', 'auth']);
+```
+
+| Route (GET unless noted) | Explorer method | Answers |
+|---|---|---|
+| `search?q=&limit=` | `search` | g282.1 chunk listing; each hit hydrated to a full chunk item (uri, sha256, writer, recordedAt, position) plus `score` and `method` |
+| `sources?cursor=&limit=` | `listSources` | prism-graph's own g282.1 listing |
+| `sources/{sourceId}/chunks?cursor=&limit=` | `listChunks` | prism-graph's own g282.1 listing |
+| `chunks?ids[]=` | `getChunks` | g282.1 chunk listing, hydrated (at most 200 ids) |
+| `facts?subject=&unaccepted=1` | `facts` | g282.1 listing of facts (`status` as a string) |
+| `facts/timeline?subject=` | `factTimeline` | g282.1 listing of every version |
+| `facts/all?subject=&cursor=&limit=` | `listFacts` | prism-graph's g282.2 listing once it ships; 501 until then |
+| `ingest/jobs`, `ingest/worker` | `ingestJobs`, `workerStatus` | passed through once prism-graph ships them; 501 until then |
+| POST `facts/{id}/accept`, `facts/{id}/reject` | the explorer's `onAccept` / `onReject` | only with `decider`; a non-human actor is 403, and the body is never read. Reject retracts. |
+
+- **Hydration reads the store's own listing** (`ScopedGraph::listChunks`, page by page,
+  at most `hydratePages`, default 20 per source), never a parallel copy. A chunk the
+  listing no longer holds (retired since it was cited) comes back with what the chunk
+  carries, `retired: true` and empty provenance strings, never invented ones.
+- **No scope, 403.** A bad cursor, limit, id list or subject is 422 (`knowledge.request`),
+  and the message is never echoed.
+- Every number is a constructor argument: `searchMax` (50), `hydratePages` (20),
+  `maxIds` (200).
 
 ## Develop
 
