@@ -2,6 +2,7 @@
     "name": "particle-academy/fancy-chat-prism-php",
     "description": "OPTIONAL Prism Harness adapter for particle-academy/fancy-chat-php: maps a Harness session's RunStep stream (contract g282.1) onto the provider-neutral agent-chat events, drives streamed approval continuation and maps Harness cancel outcomes.",
     "type": "library",
+    "abandoned": "particle-academy/fancy-chat-php",
     "license": "MIT",
     "keywords": [
         "laravel",

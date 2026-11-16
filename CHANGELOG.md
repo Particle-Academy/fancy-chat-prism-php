@@ -16,6 +16,9 @@ version number is not a stability promise until 1.0; read the entry.
 
 ### Changed
 
+- **`composer.json` declares `"abandoned": "particle-academy/fancy-chat-php"`**, Composer's
+  own marker, so tooling that reads the manifest knows to use the replacement.
+
 - **`particle-academy/fancy-chat-php` is capped at `>=0.1.0 <0.2` on main**, an
   exception to the sibling-range rule: 0.2.0 contains this package's classes and
   replaces it, so the two cannot be installed together. Released 0.1.0 is unchanged.
