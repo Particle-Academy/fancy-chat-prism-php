@@ -8,6 +8,21 @@ version number is not a stability promise until 1.0; read the entry.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A run that ended badly settled the turn as completed.** Harness fires
+  `RunFinished` for every finish reason but error and unknown, and fancy-chat
+  completes a turn whose stream simply ends, so a length-truncated answer read as a
+  finished one (reported by impactium). The ROOT run's end now settles the turn:
+  `stop` completes; `length` fails `output_limit`; `content-filter` fails
+  `content_filter`; `refusal` settles `refused` (`refusal`); `error` fails
+  `model_error`; `unknown` fails `finish_unknown`; `other` fails `finish_other`;
+  `tool-calls` and `pause` park when the run raised approvals and otherwise fail
+  `step_limit` / `finish_pause`; any reason not listed fails `finish_unknown`.
+  `RunFailed` fails `model_error`, `finish_unknown`, `budget` or `run_failed`.
+  A sub-run's end never settles the turn. The partial text is kept. Nothing to do
+  unless you relied on a truncated turn reading as completed.
+
 ### Added
 
 - `FancyChat\Prism\HarnessBackend`, an `AgentBackend` for

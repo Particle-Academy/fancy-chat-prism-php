@@ -17,6 +17,16 @@ $file = 'src/HarnessBackend.php';
 
 /** @var list<array{0: string, 1: string, 2: string, 3: string}> [name, file, search, replace] */
 $mutations = [
+    // A root run that ends badly fails the turn.
+    ['length reads as success', $file, "        'length' => ['action' => 'fail', 'reason' => 'output_limit'],\n", ''],
+    ['content filter reads as success', $file, "        'content-filter' => ['action' => 'fail', 'reason' => 'content_filter'],\n", ''],
+    ['refusal reads as a failure', $file, "'refusal' => ['action' => 'refuse', 'reason' => 'refusal'],", "'refusal' => ['action' => 'fail', 'reason' => 'refusal'],"],
+    ['unknown reasons read as success', $file, ": ['action' => 'fail', 'reason' => 'finish_unknown'];\n    }", ": null;\n    }"],
+    ['root end never settles', $file, "            } elseif (\$end !== null && \$end['settle'] !== null) {", '            } elseif (false) {'],
+    ['a bad finish still parks', $file, "\$st['approvals'] > 0 && (\$end === null || in_array(\$end['finishReason'], ['pause', 'tool-calls'], true))", "\$st['approvals'] > 0"],
+    ['sub-runs settle the turn', $file, "            if (\$event->parentRunId === null && (\$event instanceof RunFinished || \$event instanceof RunFailed)) {", '            if ($event instanceof RunFinished || $event instanceof RunFailed) {'],
+    ['RunFailed ignored', $file, "                    : ['finishReason' => null, 'settle' => self::turnEnd(null, \$event->exception, true)];", "                    : ['finishReason' => null, 'settle' => null];"],
+    ['turnEnd ignores isRoot', $file, "        if (! \$isRoot) {\n            return null;\n        }\n", ''],
     // The version gate.
     ['any contract version accepted', $file, 'if ($version !== self::CONTRACT_VERSION) {', 'if (false) {'],
     ['a missing version accepted', $file, "\$version = is_array(\$step) ? (\$step['contractVersion'] ?? null) : null;", "\$version = is_array(\$step) ? (\$step['contractVersion'] ?? self::CONTRACT_VERSION) : null;"],
@@ -57,7 +67,7 @@ $mutations = [
 
     // Approvals.
     ['approval request ignored', $file, "                yield self::event(\$step, 'approval.requested', ['approval' => \$approval]);\n", ''],
-    ['approval never parks the turn', $file, "            } elseif (\$st['approvals'] > 0) {", "            } elseif (false) {"],
+    ['approval never parks the turn', $file, "            } elseif (\$st['approvals'] > 0 && (", "            } elseif (false && ("],
     ['approval forgets its tool call', $file, "\$call = \$toolCallId !== null ? (\$st['calls'][\$toolCallId] ?? null) : null;", '$call = null;'],
     ['host wording ignored', $file, "                    (\$this->present)(\$request),\n", "                    self::english(\$request),\n"],
     ['approval not marked as Harness\'s', $file, "                        'origin' => self::ORIGIN,\n", ''],

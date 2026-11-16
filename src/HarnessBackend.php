@@ -51,6 +51,29 @@ final class HarnessBackend implements AgentBackend
 
     private const array RUN_EVENTS = [RunStarted::class, RunResumed::class, RunFinished::class, RunFailed::class];
 
+    /**
+     * How a ROOT run's finish reason (Prism `FinishReason`, carried verbatim by
+     * Harness's RunFinished) settles the chat turn. `stop` completes; `pause` and
+     * `tool-calls` park when the run raised approvals, and are failures otherwise
+     * (nothing to wait on: a pause with no request, or a run that stopped with its
+     * tool calls unanswered, i.e. a step limit). Anything not listed fails as
+     * `finish_unknown`: a reason we do not recognise is never read as success.
+     */
+    private const array FINISH = [
+        'stop' => null,
+        'length' => ['action' => 'fail', 'reason' => 'output_limit'],
+        'content-filter' => ['action' => 'fail', 'reason' => 'content_filter'],
+        'refusal' => ['action' => 'refuse', 'reason' => 'refusal'],
+        'error' => ['action' => 'fail', 'reason' => 'model_error'],
+        'unknown' => ['action' => 'fail', 'reason' => 'finish_unknown'],
+        'other' => ['action' => 'fail', 'reason' => 'finish_other'],
+        'tool-calls' => ['action' => 'fail', 'reason' => 'step_limit'],
+        'pause' => ['action' => 'fail', 'reason' => 'finish_pause'],
+    ];
+
+    /** Root-run ends seen while streaming, per session key: [finishReason|null, settle|null]. */
+    private array $rootEnds = [];
+
     /** @var Closure(string): Session */
     private Closure $session;
 
@@ -194,6 +217,7 @@ final class HarnessBackend implements AgentBackend
     {
         $this->listen();
         $this->runEvents[$key] = [];
+        unset($this->rootEnds[$key]);
         $st = ['last' => null, 'thinking' => null, 'text' => null, 'calls' => [], 'approvals' => 0, 'failure' => null];
         try {
             try {
@@ -222,13 +246,18 @@ final class HarnessBackend implements AgentBackend
             }
             yield from $this->closeAll($st);
             yield from $this->flushRuns($key);
+            $end = $this->rootEnds[$key] ?? null;
             if ($st['failure'] !== null) {
                 yield self::fail($st['failure']);
-            } elseif ($st['approvals'] > 0) {
+            } elseif ($st['approvals'] > 0 && ($end === null || in_array($end['finishReason'], ['pause', 'tool-calls'], true))) {
                 yield ['type' => 'turn.transition', 'data' => ['action' => 'park']];
+            } elseif ($end !== null && $end['settle'] !== null) {
+                // The root run ended badly: settle it here, or fancy-chat would
+                // auto-finish the turn as completed when the stream simply ends.
+                yield ['type' => 'turn.settled', 'data' => $end['settle']];
             }
         } finally {
-            unset($this->runEvents[$key]);
+            unset($this->runEvents[$key], $this->rootEnds[$key]);
         }
     }
 
@@ -402,6 +431,11 @@ final class HarnessBackend implements AgentBackend
         $pending = $this->runEvents[$key] ?? [];
         $this->runEvents[$key] = [];
         foreach ($pending as $event) {
+            if ($event->parentRunId === null && ($event instanceof RunFinished || $event instanceof RunFailed)) {
+                $this->rootEnds[$key] = $event instanceof RunFinished
+                    ? ['finishReason' => $event->finishReason, 'settle' => self::turnEnd($event->finishReason, null, true)]
+                    : ['finishReason' => null, 'settle' => self::turnEnd(null, $event->exception, true)];
+            }
             $envelope = ['runId' => $event->runId, 'parentRunId' => $event->parentRunId, 'rootRunId' => $event->rootRunId ?? $event->runId];
             yield $envelope + match (true) {
                 $event instanceof RunStarted => ['type' => 'run.started', 'data' => ['mode' => $event->mode, 'provider' => $event->provider, 'model' => $event->model]],
@@ -440,6 +474,34 @@ final class HarnessBackend implements AgentBackend
                 'at' => $at['at'] ?? null,
             ]],
         ];
+    }
+
+    /**
+     * How a run's end settles the chat turn, or null when it does not (a sub-run,
+     * or a root run that stopped normally). `$finishReason` is RunFinished's;
+     * `$failure` is RunFailed's `exception` (a finish reason, `budget`, or a class
+     * name, which is never stored).
+     *
+     * @return array{action: string, reason: string}|null
+     */
+    public static function turnEnd(?string $finishReason, ?string $failure, bool $isRoot): ?array
+    {
+        if (! $isRoot) {
+            return null;
+        }
+        if ($failure !== null) {
+            return ['action' => 'fail', 'reason' => match ($failure) {
+                'error' => 'model_error',
+                'unknown' => 'finish_unknown',
+                'budget' => 'budget',
+                default => 'run_failed',
+            }];
+        }
+        if ($finishReason === null) {
+            return null;
+        }
+
+        return array_key_exists($finishReason, self::FINISH) ? self::FINISH[$finishReason] : ['action' => 'fail', 'reason' => 'finish_unknown'];
     }
 
     /** @return array{type: string, data: array{action: string, reason: string}} */
