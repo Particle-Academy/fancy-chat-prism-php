@@ -1,5 +1,31 @@
 # particle-academy/fancy-chat-prism-php
 
+> **Merged into [`particle-academy/fancy-chat-php`](https://github.com/Particle-Academy/fancy-chat-php) 0.2.0.
+> This package is abandoned and gets no further releases.**
+>
+> The Fancy agent chat is built on the Prism ecosystem (owner, 2026-11-16), so its
+> Harness backend is no longer an optional adapter. Everything this package held now
+> ships in fancy-chat-php under the SAME class names:
+>
+> | Here (0.1.0) | In fancy-chat-php 0.2.0 |
+> |---|---|
+> | `FancyChat\Prism\HarnessBackend` | `FancyChat\Prism\HarnessBackend` (plus an `attachments:` resolver) |
+> | `FancyChat\Prism\KnowledgeBridge` | `FancyChat\Prism\KnowledgeBridge` (plus `sourceTitle`, needs prism-graph >=0.4) |
+> | `FancyChat\Prism\UnsupportedKnowledgeCall` | the same |
+>
+> **To migrate:**
+>
+> ```bash
+> composer remove particle-academy/fancy-chat-prism-php
+> composer require particle-academy/fancy-chat-php:^0.2
+> ```
+>
+> No code changes. fancy-chat-php 0.2.0 declares `replace` for this package, so an
+> install that still names it resolves to fancy-chat-php, and the two can never be
+> installed together.
+
+The text below describes 0.1.0, the last release.
+
 The **OPTIONAL** Prism Harness adapter for
 [`particle-academy/fancy-chat-php`](https://github.com/Particle-Academy/fancy-chat-php),
 the provider-neutral Laravel chat server of the Fancy agent-chat framework

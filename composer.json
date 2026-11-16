@@ -34,7 +34,7 @@
         "php": "^8.4",
         "illuminate/contracts": "^13.0",
         "illuminate/support": "^13.0",
-        "particle-academy/fancy-chat-php": ">=0.1.0 <2.0",
+        "particle-academy/fancy-chat-php": ">=0.1.0 <0.2",
         "particle-academy/prism-harness": "^0.26"
     },
     "require-dev": {

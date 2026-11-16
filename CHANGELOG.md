@@ -8,6 +8,18 @@ version number is not a stability promise until 1.0; read the entry.
 
 ## [Unreleased]
 
+### Removed
+
+- **Merged into `particle-academy/fancy-chat-php` 0.2.0, with the same class names.
+  No further releases.** Run `composer remove particle-academy/fancy-chat-prism-php`
+  and require `particle-academy/fancy-chat-php:^0.2`; no code changes.
+
+### Changed
+
+- **`particle-academy/fancy-chat-php` is capped at `>=0.1.0 <0.2` on main**, an
+  exception to the sibling-range rule: 0.2.0 contains this package's classes and
+  replaces it, so the two cannot be installed together. Released 0.1.0 is unchanged.
+
 ## [0.1.0] - 2026-11-15
 
 ### Changed
