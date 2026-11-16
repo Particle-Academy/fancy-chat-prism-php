@@ -8,6 +8,14 @@ version number is not a stability promise until 1.0; read the entry.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-15
+
+### Changed
+
+- **Requires `particle-academy/fancy-chat-php` `>=0.1.0 <2.0`**, its first release,
+  instead of `dev-main`. The Composer `vcs` repository entry stays only until
+  fancy-chat-php is on Packagist (a root-only setting, so a consumer needs Packagist).
+
 ### Added
 
 - **`KnowledgeBridge`, optional:** routes serving fancy-chat-ui's knowledge explorer
