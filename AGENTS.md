@@ -7,6 +7,10 @@ the envelope's `RULES.md` and must never be copied here.
 
 ## State
 
+**ABANDONED: merged into fancy-chat-php 0.2.0** (`src/Prism/`, same class names; its
+suite is in fancy-chat-php's `tests/Harness/`). Make no changes here; change
+fancy-chat-php. The rest of this file describes 0.1.0.
+
 The Harness adapter exists: `src/HarnessBackend.php`, an `AgentBackend` for
 `fancy-chat-php` over `Session::streamSteps()` / `streamDecision()` (RunStep
 contract `g282.1`). Not published. The ACP, bare `asStream()`, graph and memory
