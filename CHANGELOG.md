@@ -22,6 +22,7 @@ version number is not a stability promise until 1.0; read the entry.
 - **`particle-academy/fancy-chat-php` is capped at `>=0.1.0 <0.2` on main**, an
   exception to the sibling-range rule: 0.2.0 contains this package's classes and
   replaces it, so the two cannot be installed together. Released 0.1.0 is unchanged.
+- CI: re-pin org third-party allowlist to 2614224
 
 ## [0.1.0] - 2026-11-15
 
